@@ -1,38 +1,12 @@
 # Overview
 
-This interface enables a user to remotely teleoperate a Stretch robot through a web browser. This website can be set up to teleoperate the robot remotely from anywhere in the world with an internet connection, or simply eyes-off teleop from the next room on a local network. The codebase is built on ROS2, WebRTC, Nav2, and TypeScript.
+This codebase provides a full-stack interface for **remotely teleoperating the Stretch robot**, **recording teleop demonstrations**, and **authoring shared autonomy programs** via a high-level API.
+
+Originally adapted from the base [Hello Robot teleop interface](https://github.com/hello-robot/stretch_web_interface), this version extends functionality to support shared autonomy of the Stretch through end-user programming. The interface supports remote access from anywhere in the world using WebRTC and is built on ROS2, WebRTC, Nav2, and TypeScript.
 
 # Setup & Installation
 
 The interface is compatible with the Stretch RE1, RE2 and SE3. It currently only supports Ubuntu 22.04 and ROS2 Humble. Upgrade your operating system if necessary ([instructions](https://docs.hello-robot.com/0.3/installation/robot_install/)) and create/update the Stretch ROS2 Humble workspace ([instructions](https://docs.hello-robot.com/0.3/installation/ros_workspace/)). This will install all package dependencies and install the web teleop interface.
-
-## Audio configuration
-
-We provide a convenience script `./configure_audio.sh` to configure your audio devices. Depending on desired audio configuration, you may need to pass in speaker and mic names (see the comment in the script itself for usage details). Below, we detail additional commands that could help configure your audio.
-
-You may need to re-run audio configuration every time you re-start your Stretch.
-
-### Audio Devices
-
-For robot-to-operator audio streaming, the web interfaces uses the robot's system default microphone if one or more external microphones are plugged in, or the built-in robot microphone if no external microphones are plugged in.
-
-For operator-to-robot text-to-speech, the web interface uses the system default speaker.
-
-However, note the system defaults can change when you (un)plug audio devices (e.g., sometimes (un)plugging a mic can cause the system default speaker to change). Thus, it is best practice to always check.
-
-In the below instructions,  replace `<sink/source>` with `sink` for a speaker and `source` for a microphone. Note that this won't work if you're using X-11 forwarding:
-
-1. List all speakers/microphones: `pactl list short <sink/source>s`
-1. Get the default: `pactl get-default-<sink/source>`
-1. Set the default: `pactl set-default-<sink/source> <device-name>` where `<device-name>` is one of the names listed from the above command.
-   1. The built-in default speaker will be called something like `alsa_output.pci-0000_00_1f.3.analog-stereo`, and the built-in default mic will be called something like `alsa_input.usb-SEEED_ReSpeaker_4_Mic_Array__UAC1.0_-00.multichannel-input`.
-
-### Audio volume/gain
-
-1. To unmute the speaker: `amixer set 'Master unmute`
-1. To set the speaker volume to 100%: `amixer sset 'Master' 100%` (Note that there is also a physical volume knob on the head of the Stretch3 that must be turned up.)
-1. To unmute the mic: `amixer set 'Capture' cap`
-1. To set the mic gain to 100%: `amixer sset 'Capture' 100%`
 
 ## Installing Beta Teleop Cameras
 
@@ -84,7 +58,7 @@ and verify the symlinks are setup correctly.
 First, navigate to the folder containing the codebase using:
 
 ```
-colcon_cd stretch_web_teleop
+colcon_cd stretch_shared_autonomy
 ```
 
 Next, launch the interface:
@@ -296,35 +270,7 @@ Moving to the "Tuck Arm" goal:
 
 The movement recorder can also be used to record entire movements. In this case, start recording, move the arm, and then stop recording when the motion is done.
 
-## Audio Streaming
 
-To better facilitate beyond line-of-sight operation, the web interface enables bi-directional audio interaction.
-
-### Robot-to-Operator
-
-Audio from the robot can be streamed to the operator directly through the robot's microphone, by (un)muting audio in the web interface.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/robot_to_operator_audio_streaming.gif">
-</p>
-
-### Operator-to-Robot Text-to-Speech
-
-The operator can send text to be spoken on the robot. The operator can also save commonly-used text, and can stop an ongoing utterance. When used in conjunction with robot-to-operator audio streaming, the operator can also hear when the robot has finished speaking.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/text_to_speech.gif">
-</p>
-
-Text-to-speech can also be performed with a command-line interface, by running `ros2 run stretch_web_teleop text_to_speech_ui.py`. This is particulalry useful in situations where a separate operator is controlling the robot and a separate operator is controlling speech interactions.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/text_to_speech_cli.gif">
-</p>
-
-## Using a Tablet as the End Effector
-
-Stay tuned for instructions on using the web interface with a tablet as an end effector!
 
 # Contributing
 
