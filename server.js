@@ -157,7 +157,7 @@ app.post('/start_rosbag', (req, res) => {
         return res.status(400).json({ error: 'Rosbag recording already in progress.' });
     }
 
-     
+    //change output directory of recorded rosbags 
     const outputDir = '/media/hello-robot/HCRLAB/rosbags/latest_' + Date.now();
     rosbagProcess = spawn('ros2', [
         'bag', 'record',
