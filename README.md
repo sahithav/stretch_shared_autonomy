@@ -2,11 +2,48 @@
 
 This codebase provides a full-stack interface for **remotely teleoperating the Stretch robot**, **recording teleop demonstrations**, and **authoring shared autonomy programs** via a high-level API.
 
-Originally adapted from the base [Hello Robot teleop interface](https://github.com/hello-robot/stretch_web_interface), this version extends functionality to support shared autonomy of the Stretch through end-user programming. The interface supports remote access from anywhere in the world using WebRTC and is built on ROS2, WebRTC, Nav2, and TypeScript.
+Originally adapted from the base [Hello Robot teleop interface](https://github.com/hello-robot/stretch_web_interface), this version extends functionality to support shared autonomy of the Stretch through end-user programming. The interface supports remote access using WebRTC and is built on ROS2, WebRTC, Nav2, and TypeScript.
 
 # Setup & Installation
 
-The interface is compatible with the Stretch RE1, RE2 and SE3. It currently only supports Ubuntu 22.04 and ROS2 Humble. Upgrade your operating system if necessary ([instructions](https://docs.hello-robot.com/0.3/installation/robot_install/)) and create/update the Stretch ROS2 Humble workspace ([instructions](https://docs.hello-robot.com/0.3/installation/ros_workspace/)). This will install all package dependencies and install the web teleop interface.
+The interface is compatible with the Stretch RE1, RE2 and SE3. It currently only supports Ubuntu 22.04 and ROS2 Humble. Upgrade your operating system if necessary ([instructions](https://docs.hello-robot.com/0.3/installation/robot_install/)) and create/update the Stretch ROS2 Humble workspace ([instructions](https://docs.hello-robot.com/0.3/installation/ros_workspace/)). This will install all package dependencies. 
+
+1. Create a new ROS2 workspace at ~/ros2_ws. Follow the official ROS2 tutorial for step-by-step guidance.([instructions](https://docs.ros.org/en/foxy/Tutorials/Beginner-Client-Libraries/Creating-A-Workspace/Creating-A-Workspace.html).
+2. Clone this repository into ~/ros2_ws/src:
+```
+cd ~/ros2_ws/src
+git clone <repo-url>
+```
+3. Install web interface dependencies:
+```
+cd ros2_ws/src/stretch_web_teleop
+pip3 install -r requirements.txt
+npm install --force
+npx playwright install
+```
+4. Set up HTTPS certificates:
+```
+cd ros2_ws/src/stretch_web_teleop/certificates
+curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
+chmod +x mkcert-v*-linux-amd64
+sudo cp mkcert-v*-linux-amd64 /usr/local/bin/mkcert
+CAROOT=`pwd` mkcert --install 
+mkdir -p ~/.local/share/mkcert
+rm -rf ~/.local/share/mkcert/root*
+cp root* ~/.local/share/mkcert
+mkcert ${HELLO_FLEET_ID} ${HELLO_FLEET_ID}.local ${HELLO_FLEET_ID}.dev localhost 127.0.0.1 0.0.0.0 ::1 
+rm mkcert-v*-linux-amd64
+cd ros2_ws/src/stretch_web_teleop
+touch .env
+echo certfile=${HELLO_FLEET_ID}+6.pem >> .env
+echo keyfile=${HELLO_FLEET_ID}+6-key.pem >> .env
+cd ros2_ws
+```
+
+You will need a [Foxglove account](https://app.foxglove.dev/signup) to replay recorded teleoperation demonstrations in order to create programs. Ensure the MCAP plugin is installed for Foxglove compatibility:
+```
+$ sudo apt-get install ros-humble-rosbag2-storage-mcap
+```
 
 ## Installing Beta Teleop Cameras
 
@@ -89,162 +126,35 @@ Once you're done with the interface, close the browser and run:
 ./stop_interface.sh
 ```
 
+If you encounter any issues with missing certificates, copy the certificates from your ament_ws install to your ros2_ws install.
+```
+cp -r ~/ament_ws/install/stretch_web_teleop/share/stretch_web_teleop/certificates/* ~/ros2_ws/install/stretch_web_teleop/share/stretch_web_teleop/certificates/
+```
+
 **Note:** Only one browser can be connected to the interface at a time.
 
-# Using the Interface Remotely
-
-**WARNING: This is prototype code and there are security issues. Deploy this code at your own risk.**
-
-We recommend setting up the interface for remote use using [ngrok](https://ngrok.com/docs/what-is-ngrok/). First, create an account with `ngrok` and follow the Linux installation instructions in the `Setup & Installation` tab in your ngrok account dashboard.
-
-Navigate to the `Domains` tab and click `Create Domain`. ngrok will automatically generate a domain name for your free account. You will see a domain similar to `deciding-hornet-purely.ngrok-free.app`. Follow the interface launch instructions and then start the ngrok tunnel by running the following command (replace `<NGROK_DOMAIN>` with your account's domain and `user:password` with a secure username and password):
-
-```
-ngrok http --basic-auth="user:password" --domain=<NGROK_DOMAIN> 443
-```
-
-In your browser, open `https://<NGROK_DOMAIN>/operator` to see the interface. You will then be prompted to enter the appropriate username and password. Note, anyone in the world with internet access can open this link.
-
-## Storing Ngrok Tunnel Configuration
-
-To store this configuration, open the ngrok config file:
-
-```
-ngrok config edit
-```
-
-Add the following configuration to the file. Make sure to update `<NGROK_AUTH_TOKEN>`, `<NGROK_DOMAIN>`, and `admin:password` with the appropriate values.
-
-```
-authtoken: <NGROK_AUTH_TOKEN>
-version: 2
-tunnels:
-    stretch-web-teleop:
-        proto: http
-        domain: <NGROK_DOMAIN>
-        addr: 443
-        basic_auth:
-          - "admin:password"
-        host_header: rewrite
-        inspect: true
-```
-
-Now run `ngrok start stretch-web-teleop` to start the tunnel and navigate to `https://<NGROK_DOMAIN>/operator`. You will then be prompted to enter the appropriate username and password.
 
 # Usage Guide
 
-The web interface currently has a variety of control modes, displays and customization options. This tutorial will explain how to use the standard version of the interface that appears when you load it for the first time.
+The web interface includes three modes: Demonstration Recorder, Program Editor, and Execution Monitor. You can navigate between them using the dropdown menu located on the left side of the header. This tutorial will walk you through how to use each mode.
 
-## Overview of Layout
+## Demonstration Recorder
 
-There are three panels. The `Camera Views` panel contains the wide angle and gripper camera views. The second panel has three tabs: (1) `Base`, (2) `Wrist & Gripper`, and (3) `Arm & Lift`. Each of these tabs contains a button pad for controlling the respective joints. The `Safety` panel contains the run stop and battery gauge. The header contains a drop down for three action modes, the speed controls (`Slowest`, `Slow`, `Medium`, `Fast`, and `Fastest`) and a button to enable the customization mode.
-
-## Wide-Angle Camera View
-
-The wide angle camera is attached to the robot's head which can pan and tilt. There are four buttons bordering the camera feed the will pan and tilt the camera.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/pan-tilt.gif">
-</p>
+There are three panels. The `Camera Views` panel contains the wide angle and gripper camera views. The second panel has three tabs: (1) `Base`, (2) `Wrist & Gripper`, and (3) `Arm & Lift`. Each of these tabs contains a button pad for controlling the respective joints. The `Safety` panel contains the run stop and battery gauge. The `Record Demo` button will allow you to record demonstrations of the robot being teleoperated. The header contains a drop down for three action modes, the speed controls (`Slowest`, `Slow`, `Medium`, `Fast`, and `Fastest`), and a `Home Robot` button to reset the robot to its home position. 
 
 ### Quick Look
 
 There are three built-in quick look options: `Look Ahead`, `Look at Base` and `Look at Gripper`.
 
-<p align="center">
-    <img src="documentation/assets/tutorial/quick-look.gif">
-</p>
-
-### Follow Gripper
-
-The `follow gripper` button will automatically pan/tilt the head to focus on the gripper as the arm is moved. This is can be useful when trying to pick something up.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/follow-gripper.gif">
-</p>
-
-### Predictive Display
-
-The 'predictive display' mode will overlay a trajectory over the video stream that Stretch will follow. Stretch's speed and heading will depend on the length and curve of the trajectory. Stretch will move faster the longer the trajectory is and slower the shorter the trajectory is. The trajectory will turn red when you click and the robot is moving. The robot will rotate in place when you click on the base and will move backwards when you click behind the base. In the `press-release` and `click-click` [action modes](#action-modes) you can move the cursor to update the trajectory while the robot is moving. Additionally, you can scale the speed by selecting one of the speed controls.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/predictive-display.gif">
-</p>
-
-## Gripper Camera View
+### Gripper Camera View
 
 There are two quick actions for the gripper camera view: (1) `center wrist` and (2) `stow wrist`. Center wrist will turn the wrist out and align it with the arm. Stow wrist will rotate the wrist to the stow position.
 
-<p align="center">
-    <img src="documentation/assets/tutorial/quick-actions.gif">
-</p>
-
-### Expanded Gripper View
-
-Users can toggle between the default gripper view and an expanded gripper view. The expanded gripper view cam be useful e.g., if the robot is holding a large object that is obscuring much of the gripper camera's view.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/expanded_gripper_view.gif">
-</p>
-
-### Gripper Depth Overlay
-
-Users can toggle on/off a depth overlay, which highlights all points that are within the two fingers of the gripper. This can be useful to gauge when you have moved far enough to grasp an object.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/gripper_depth_overlay.gif">
-</p>
-
-## Head Realsense Camera View
-
-The head Realsense camera view needs to be added through the customization menu. It has the same head pan/tilt buttons, "Quick Look" buttons, and "Follow Gripper" button as the Wide-Angle Camera.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/head_realsense_camera.gif">
-</p>
-
-### Head Realsense Depth Overlay
-
-The head Realsense camera also has a depth overlay, which highlights all points that are close enough to the robot to be graspable.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/head_realsense_depth_overlay.gif">
-</p>
-
-### Click-to-Pregrasp
-
-The head Realsense camera allows users to select a point in the camera view, and have the robot automatically move to align with that point. This can be done with the gripper horizontal...
-
-<p align="center">
-    <img src="documentation/assets/tutorial/head_realsense_click_to_pregrasp_horizontal.gif">
-</p>
-
-...or with the gripper vertical.
-
-<p align="center">
-    <img src="documentation/assets/tutorial/head_realsense_click_to_pregrasp_vertical.gif">
-</p>
-
-## Button Pads
+### Button Pads
 
 Each button pad controls a different set of joints on the robot. When you click a button the robot will move and the button will highlight blue while the robot is moving. The button will turn red when the respective joint is at its limit.
 
-<table align="center">
-  <tr>
-    <th>Drive</th>
-    <td><img src="documentation/assets/tutorial/drive-optimized.gif"></td>
-  </tr>
-  <tr>
-    <th>Dex Wrist</th>
-    <td><img src="documentation/assets/tutorial/wrist-gripper.gif"></td>
-  </tr>
-  <tr>
-    <th>Arm & Lift</th>
-    <td><img src="documentation/assets/tutorial/arm-lift.gif"></td>
-  </tr>
-</table>
-
-## Action Modes
+### Action Modes
 
 The action modes can be selected in the dropdown in the top-left corner of the interface. The action modes provides varying degrees of discrete and continuous control.
 
@@ -252,63 +162,46 @@ The action modes can be selected in the dropdown in the top-left corner of the i
 - **Press-Release**: Stretch will move while you are pressing and holding the button and will stop when you release.
 - **Click-Click**: Stretch will start moving when you click and will stop when you click again. You can also stop Stretch by moving the cursor outside the button you clicked.
 
-## Movement Recorder
+### Record Demo
 
-There is a movement recorder that can be used to save and playback robot arm motions. One way of using it is to record a goal state for the robot arm to move to. To do so, start recording, keep the arm stationary for a few seconds, and then stop recording.
+To record demonstrations, press the `Record Demo` button and teleoperate the robot using the button pads as you normally would. The robot’s data will be saved locally as a rosbag, which you can later upload to Foxglove and reference when writing your program.
+In order to save these rosbags to a specific folder, you can change the output directory in [server.js](https://github.com/sahithav/stretch_shared_autonomy/blob/faaaa502754c426d90ae845e2a992df39aeae45d/server.js#L161C3-L161C80). 
 
-Recording a "Tuck Arm" goal:
+## Program Editor 
+The program editor consists of two panels. The `Program Editor` allows you to write and execute programs on the robot. The `Library` contains available functions and saved configurations. Configurations can be added by referencing a recording. 
+The `Reset Robot` button resets the robot to its home position without performing the full homing process (useful if you want to re-run a program).
 
-<p align="center">
-    <img src="documentation/assets/tutorial/movement_recorder_tuck_arm_record.gif">
-</p>
+You can use any of the functions listed in the Library. `Robot Functions` correspond to actions that can be executed autonomously by the robot. `Human Functions` correspond to actions that require user input during execution. Saved configurations provide input values for these functions. Clicking on a function or configuration will automatically insert it into the Program Editor. Comments can also be added directly within the editor.
 
-Moving to the "Tuck Arm" goal:
+### Robot Functions 
+- Move_Arm_to_Config(configuration_name): Move the arm and wrist of the robot to specified joint state configuration
+- Adjust_Gripper_Width(configuration_name): Open or close the gripper to specified width configuration
+- Rotate_Wrist_to_Config(configuration_name): Move the wrist of the robot to specified orientation
+- Reset_Robot(configuration_name): Return the robot to its default configuration
 
-<p align="center">
-    <img src="documentation/assets/tutorial/movement_recorder_tuck_arm_playback.gif">
-</p>
+### Human Functions 
+- Take_Control(): Stop program execution and switch to teleoperating the robot mid-program to correct its behavior if needed
+- Pause_And_Confirm(): Pause the program to inspect the robot mid-execution before resetting or proceeding with the remaining commands
 
-The movement recorder can also be used to record entire movements. In this case, start recording, move the arm, and then stop recording when the motion is done.
+### Saved Configurations 
+Saved configurations are stored joint positions of the robot that serve as inputs to functions. They can be copied from Foxglove (explained below) and added through the `Add Configuration` button. Configurations are stored under a chosen name and can then be used within programs.
+
+### Saving and Loading Programs 
+Programs can be saved and reloaded for later use. This feature, available through the header buttons, saves both the program and its associated configurations. Once reloaded, the program can be run on the robot in a new session. 
+
+## Demonstration Replayer 
+Using your Foxglove account, open a previously recorded rosbag to reference during program creation. After opening the file, you can customize the the layout with panels ([details](https://docs.foxglove.dev/docs/visualization/panels)). We recommend:
+- A 3D panel
+    - In order to visualize the robot, you will need to manually add a `URDF layer` to the 3D panel. You can add the corresponding raw github link to your Stretch Robot ([urdf](https://github.com/hello-robot/stretch_urdf/tree/main/stretch_urdf/SE3)).
+- Two Image panels (for /camera/color/image_raw and /gripper_camera/image_raw/compressed)
+- A Data Source panel (to display /joint_states
+Use the scrubber to play through the recording. When you reach a desired position, copy the `position` array in the Data Source panel for /joint_states. This array corresponds to the robot’s joint positions and can be used as a saved configuration.
+
+## Execution Monitor 
+The Execution Monitor contains three panels: `Camera Views`, `Execution Monitor`, and the teleoperation controls. The Execution Monitor  lets you run your program, reset the robot, and displays your program line by line as it executes. 
+
+If a Human Function is called, you will be prompted to provide input:
+- When `Pause_And_Confirm()` is reached, a popup appears asking if the program should continue.
+- When `Take_Control()` is reached, teleoperation controls are enabled. You can use the button pads to control the robot, then click `Done Teleoperating` to resume execution.
 
 
-
-# Contributing
-
-- This repository uses pre-commit hooks to enforce consistent formatting and style.
-  - Install pre-commit: `python3 -m pip install pre-commit`
-  - Install the hooks locally: `cd` to the top-level of this repository and run `pre-commit install`.
-  - Moving forward, pre-commit hooks will run before you create any commit.
-
-# Troubleshooting
-
-## Collecting logs
-
-First, ensure that your robot has the latest version of Web Teleop by [updating your ROS workspace](https://docs.hello-robot.com/0.3/installation/ros_workspace/).
-
-Then, launch the program normally, and if you see "FAILURE. COULD NOT LAUNCH WEB TELEOP.", then locate the zipped-up logs file and send them to Hello Robot Support (support@hello-robot.com).
-
-To locate the logs, open a file explorer, go into "Home", go into "stretch_user", go into "log", go into "web_teleop", locate the folder with the latest timestamp, and send "stretch_web_teleop_logs.zip" to the support team.
-
-# Licenses
-
-The following license applies to the contents of this directory written by Vinitha Ranganeni, Noah Ponto, authors associated with the University of Washington, and authors associated with Hello Robot Inc. (the "Contents"). This software is intended for use with Stretch ® mobile manipulators produced and sold by Hello Robot ®.
-
-Copyright 2023 Vinitha Ranganeni, Noah Ponto, the University of Washington, and Hello Robot Inc.
-
-The Contents are licensed under the Apache License, Version 2.0 (the "License"). You may not use the Contents except in compliance with the License. You may obtain a copy of the License at
-
-http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, the Contents are distributed under the License are distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
-
-\============================================================
-
-Some of the contents of this directory derive from the following repositories:
-
-https://github.com/hello-robot/stretch_web_interface
-
-https://github.com/hcrlab/stretch_web_interface
-
-https://github.com/hcrlab/stretch_teleop_interface
-
-Text from relevant license files found in these repositories.
