@@ -142,6 +142,7 @@ The web interface includes three modes: Demonstration Recorder, Program Editor, 
 
 There are three panels. The `Camera Views` panel contains the wide angle and gripper camera views. The second panel has three tabs: (1) `Base`, (2) `Wrist & Gripper`, and (3) `Arm & Lift`. Each of these tabs contains a button pad for controlling the respective joints. The `Safety` panel contains the run stop and battery gauge. The `Record Demo` button will allow you to record demonstrations of the robot being teleoperated. The header contains a drop down for three action modes, the speed controls (`Slowest`, `Slow`, `Medium`, `Fast`, and `Fastest`), and a `Home Robot` button to reset the robot to its home position. 
 
+![image of demonstration recorder](documentation/assets/tutorial/demo_recorder.png)
 ### Quick Look
 
 There are three built-in quick look options: `Look Ahead`, `Look at Base` and `Look at Gripper`.
@@ -171,6 +172,8 @@ In order to save these rosbags to a specific folder, you can change the output d
 The program editor consists of two panels. The `Program Editor` allows you to write and execute programs on the robot. The `Library` contains available functions and saved configurations. Configurations can be added by referencing a recording. 
 The `Reset Robot` button resets the robot to its home position without performing the full homing process (useful if you want to re-run a program).
 
+![image of program editor](documentation/assets/tutorial/program_editor.png)
+
 You can use any of the functions listed in the Library. `Robot Functions` correspond to actions that can be executed autonomously by the robot. `Human Functions` correspond to actions that require user input during execution. Saved configurations provide input values for these functions. Clicking on a function or configuration will automatically insert it into the Program Editor. Comments can also be added directly within the editor.
 
 ### Robot Functions 
@@ -186,6 +189,7 @@ You can use any of the functions listed in the Library. `Robot Functions` corres
 ### Saved Configurations 
 Saved configurations are stored joint positions of the robot that serve as inputs to functions. They can be copied from Foxglove (explained below) and added through the `Add Configuration` button. Configurations are stored under a chosen name and can then be used within programs.
 
+![image of add saved configuration](documentation/assets/tutorial/add_configuration.png)
 ### Saving and Loading Programs 
 Programs can be saved and reloaded for later use. This feature, available through the header buttons, saves both the program and its associated configurations. Once reloaded, the program can be run on the robot in a new session. 
 
@@ -197,11 +201,16 @@ Using your Foxglove account, open a previously recorded rosbag to reference duri
 - A Data Source panel (to display /joint_states
 Use the scrubber to play through the recording. When you reach a desired position, copy the `position` array in the Data Source panel for /joint_states. This array corresponds to the robot’s joint positions and can be used as a saved configuration.
 
+![image of foxglove](documentation/assets/tutorial/foxglove.png)
 ## Execution Monitor 
 The Execution Monitor contains three panels: `Camera Views`, `Execution Monitor`, and the teleoperation controls. The Execution Monitor  lets you run your program, reset the robot, and displays your program line by line as it executes. 
 
 If a Human Function is called, you will be prompted to provide input:
 - When `Pause_And_Confirm()` is reached, a popup appears asking if the program should continue.
+  
+![image of execution monitor](documentation/assets/tutorial/execution_pause.png)
 - When `Take_Control()` is reached, teleoperation controls are enabled. You can use the button pads to control the robot, then click `Done Teleoperating` to resume execution.
+  
+![image of execution monitor](documentation/assets/tutorial/execution_teleoperating.png)
 
 
